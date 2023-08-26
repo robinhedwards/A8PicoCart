@@ -24,6 +24,7 @@ Get yourself a purple Raspberry Pi Pico clone (see [this thread](https://forums.
 **Warning**: always disconnect from PC/USB before plugging into your Atari or you will damage your Atari and/or PC.
 
 <img src="./images/pcbs.jpg" alt="Purple Pico mounted on the PCBs" width="600">
+<img src="./images/USB_mode.png" alt="USB Mass Storage mode" width="600">
 
 ## Inserting the cartridge
 
