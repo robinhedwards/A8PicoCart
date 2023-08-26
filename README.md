@@ -43,17 +43,17 @@ Be aware that it's possible you might get one with another type of flash memory 
 ## Reset button
 
 You can solder a push button to the cartridge to get back to the menu and avoid wear on your Atari power switch.
-When you reset the cartridge the Atari will crash - push reset on the Atari to get back to the menu.
+When you reset the cartridge the Atari will crash - just push reset on the Atari itself to get back to the menu.
 
-The button used is a 6x6mm thru-hole tactile momentary switch. If you are going to print a case, then 9mm height is suitable.
+The button used is a 6x6mm thru-hole tactile momentary switch. If you are going to print a case, then 9mm+ height is suitable.
 When you solder the button to the PCB - make sure the lower two holes in the PCB are bridged only when the button is pressed.
 
-It works simply by pulling the RUN pin to ground to reset the pico clone.
+It works simply by pulling the RUN pin on the pico clone to ground to reset.
 
 ## 3D print files
 
-The STL files can be used to print a 3 piece (front, back and logo) cartridge shell. The 2-tone logo is achieved by
-changing the filament at the correct z-position when printing a8pico_logo.stl.
+The STL files can be used to print a 3 part (front, back and logo) cartridge shell. The 2-tone logo is achieved by
+changing the filament at the correct z-position when printing a8pico_logo.stl. You'll also need 2 screws [TODO- specification]
 
 <img src="./images/3d_print_case_1.jpg" alt="Cased A8PicoCart" width="480" height="600">
 <img src="./images/3d_print_case_2.jpg" alt="Cased A8PicoCart" width="600" height="600">
