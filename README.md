@@ -59,7 +59,7 @@ changing the filament at the correct z-position when printing a8pico_logo.stl.
 <img src="./images/3d_print_case_2.jpg" alt="Cased A8PicoCart" width="600" height="600">
 
 ## Credits
--------
+
 * Design, hardware and firmware by Robin Edwards (electrotrains at atariage)
 * XEX loader and OS modifications by Jonathan Halliday (flashjazzcat at atariage)
 * Altirra LLE OS used with permision from Avery Lee (phaeron at atariage)
