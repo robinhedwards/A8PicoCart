@@ -53,10 +53,10 @@ It works simply by pulling the RUN pin on the pico clone to ground to reset.
 ## 3D print files
 
 The STL files can be used to print a 3 part (front, back and logo) cartridge shell. The 2-tone logo is achieved by
-changing the filament at the correct z-position when printing a8pico_logo.stl. You'll also need 2 screws [TODO- specification]
+changing the filament at the correct z-position when printing a8pico_logo.stl. You'll also need two M3 15mm screws.
 
-<img src="./images/3d_print_case_1.jpg" alt="Cased A8PicoCart" width="480" height="600">
-<img src="./images/3d_print_case_2.jpg" alt="Cased A8PicoCart" width="600" height="600">
+<img src="./images/3d_print_case_1.jpg" alt="Cased A8PicoCart" width="480">
+<img src="./images/3d_print_case_2.jpg" alt="Cased A8PicoCart" width="600">
 
 ## Credits
 
