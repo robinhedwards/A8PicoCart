@@ -21,9 +21,11 @@ If you build an A8PicoCart consider donating to help fund this and my future pro
 
 Get yourself a purple Raspberry Pi Pico clone (see [this thread](https://forums.raspberrypi.com/viewtopic.php?t=337976) for details) and order a PCB using the KiCad board files provided. You have a choice of two PCB designs - the XE design is for use uncased, with the Pico on the top surface. The XL/XE version is desgined to be mounted in a case (though can be used uncased too) with the Pico on the bottom/back surface. Once you have the Pico clone and PCB, solder the pico as pictured below, depending on your PCB version. Program the firmware onto the device by pressing BOOTSEL on the board and connecting to USB on a PC and drag the firmware (UF2 file) onto the device. It should then remount as A8-PICOCART so you can copy Atari CAR & XEX files to it. Unmount, then plug into your Atari and play! Optionally solder a reset button to reset back to the menu.
 
-**Warning**: always disconnect from PC/USB before plugging into your Atari or you will damage your Atari and/or PC.
+**Warning**: always disconnect from PC/USB before plugging into your Atari or you will damage your Atari and/or PC. This warning mainly
+applies to the XE/uncased version of the PCB. The newest version of the XL/XE board makes it physically impossible to connect USB when the
+cartridge is inserted in an Atari.
 
-<img src="./images/pcbs.jpg" alt="Purple Pico mounted on the PCBs" width="600">
+<img src="./images/pcbs2.jpg" alt="Purple Pico mounted on the PCBs" width="600">
 <img src="./images/USB_mode.png" alt="USB Mass Storage mode" width="600">
 
 ## Inserting the cartridge
@@ -55,8 +57,12 @@ It works simply by pulling the RUN pin on the pico clone to ground to reset.
 The STL files can be used to print a 3 part (front, back and logo) cartridge shell. The 2-tone logo is achieved by
 changing the filament at the correct z-position when printing a8pico_logo.stl. You'll also need two M3 15mm screws.
 
-<img src="./images/3d_print_case_1.jpg" alt="Cased A8PicoCart" width="480">
-<img src="./images/3d_print_case_2.jpg" alt="Cased A8PicoCart" width="600">
+<img src="./images/3d_print_case_v2.jpg" alt="Cased A8PicoCart" width="480">
+<img src="./images/3d_print_case_v2_end.jpg" alt="Cased A8PicoCart" width="480">
+
+## Changelog
+
+* 7 Oct 2023 - Add new PCB & case design files to make it impossible to insert USB when plugged into Atari. Add support for Microcart (CAR type 52) cartridges. Updated manual.
 
 ## Credits
 

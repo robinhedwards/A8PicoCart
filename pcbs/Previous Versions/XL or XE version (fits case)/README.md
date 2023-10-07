@@ -2,5 +2,5 @@
 
 * KiCad Project
 * A zip file of the gerbers (Elecrow specification).
-* Updated version for pico pointing downwards towards cartridge slot
+
 
