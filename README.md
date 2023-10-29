@@ -63,6 +63,7 @@ changing the filament at the correct z-position when printing a8pico_logo.stl. Y
 ## Changelog
 
 * 7 Oct 2023 - Add new PCB & case design files to make it impossible to insert USB when plugged into Atari. Add support for Microcart (CAR type 52) cartridges. Updated manual.
+* 29 Oct 2023 - Adds 3 new cartridge types (thanks to ascrnet)
 
 ## Credits
 
