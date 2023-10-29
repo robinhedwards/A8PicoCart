@@ -18,6 +18,9 @@
  * - Adds Turbsoft carts (CAR types 50,51)
  * - Adds ATRAX 128k carts (CAR type 17)
  * - Adds Microcalc/Utracart (CAR type 52)
+ * - Adds Standard 2k cars (CAR type 57)
+ * - Adds Phoenix 8k cars (CAR type 39)
+ * - Adds Blizzard 4k cars (CAR type 46)
  */
 
 #include <string.h>
@@ -105,6 +108,9 @@ char errorBuf[40];
 #define CART_TYPE_TURBOSOFT_128K	28	// 128k
 #define CART_TYPE_ATRAX_128K		29	// 128k
 #define CART_TYPE_MICROCALC			30	// 32k
+#define CART_TYPE_2K				31  // 2k
+#define CART_TYPE_PHOENIX_8K		32	// 8k
+#define CART_TYPE_BLIZZARD_4K		33	// 4k
 #define CART_TYPE_ATR				254
 #define CART_TYPE_XEX				255
 
@@ -430,15 +436,18 @@ int load_file(char *filename) {
 		else if (car_type == 33)	{ cart_type = CART_TYPE_SW_XEGS_32K; expectedSize = 32768; }
 		else if (car_type == 34)	{ cart_type = CART_TYPE_SW_XEGS_64K; expectedSize = 65536; }
 		else if (car_type == 35)	{ cart_type = CART_TYPE_SW_XEGS_128K; expectedSize = 131072; }
+		else if (car_type == 39)	{ cart_type = CART_TYPE_PHOENIX_8K;  expectedSize = 8192; }
 		else if (car_type == 40)	{ cart_type = CART_TYPE_BLIZZARD_16K; expectedSize = 16384; }
 		else if (car_type == 41)	{ cart_type = CART_TYPE_ATARIMAX_1MBIT; expectedSize = 131072; }
 		else if (car_type == 43)	{ cart_type = CART_TYPE_SDX_128K; expectedSize = 131072; }
 		else if (car_type == 44)	{ cart_type = CART_TYPE_OSS_8K; expectedSize = 8192; }
 		else if (car_type == 45) 	{ cart_type = CART_TYPE_OSS_16K_043M; expectedSize = 16384; }
+		else if (car_type == 46) 	{ cart_type = CART_TYPE_BLIZZARD_4K; expectedSize = 4096; }
 		else if (car_type == 50)	{ cart_type = CART_TYPE_TURBOSOFT_64K; expectedSize = 65536; }
 		else if (car_type == 51)	{ cart_type = CART_TYPE_TURBOSOFT_128K; expectedSize = 131072; }
 		else if (car_type == 52)	{ cart_type = CART_TYPE_MICROCALC; expectedSize = 32768; }
 		else if (car_type == 54)	{ cart_type = CART_TYPE_SIC_128K; expectedSize = 131072; }
+		else if (car_type == 57)	{ cart_type = CART_TYPE_2K; expectedSize = 2048; }
 		else if (car_type == 58)	{ cart_type = CART_TYPE_4K; expectedSize = 4096; }
 		else {
 			strcpy(errorBuf, "Unsupported CAR type");
@@ -506,6 +515,17 @@ int load_file(char *filename) {
 	if (cart_type == CART_TYPE_4K) {
 		memcpy(&cart_ram[4096], &cart_ram[0], 4096);
 		memset(&cart_ram[0], 0xFF, 4096);
+	}
+
+	// special case for 2K carts to allow the standard 8k emulation to be used
+	if (cart_type == CART_TYPE_2K) {
+		memcpy(&cart_ram[6144], &cart_ram[0], 6144);
+		memset(&cart_ram[0], 0xFF, 6144);
+	}
+
+	// special case for 4K carts to allow the phoenix 8k emulation to be used
+	if (cart_type == CART_TYPE_BLIZZARD_4K) {
+		memcpy(&cart_ram[4096], &cart_ram[0], 4096);
 	}
 
 closefile:
@@ -1384,6 +1404,37 @@ void __not_in_flash_func(emulate_microcalc)() {
 	}
 }
 
+void __not_in_flash_func(emulate_phoenix_8k)() {
+    // 8k
+    RD4_LOW;
+    RD5_HIGH;
+
+    uint32_t pins;
+    uint16_t addr;
+    bool rd5_high = true;	// 400/800 MMU
+
+    while (1)
+    {
+        // wait for phi2 high
+        while (!((pins = gpio_get_all()) & PHI2_GPIO_MASK)) ;
+
+        if (!(pins & S5_GPIO_MASK) && rd5_high)
+        {   // s5 low
+            SET_DATA_MODE_OUT;
+            addr = pins & ADDR_GPIO_MASK;
+            gpio_put_masked(DATA_GPIO_MASK, ((uint32_t)cart_ram[addr]) << 13);
+        }
+        else if (!(pins & CCTL_GPIO_MASK))
+        {   // CCTL low
+            RD5_LOW;
+            rd5_high = false;
+        }
+        // wait for phi2 low
+        while (gpio_get_all() & PHI2_GPIO_MASK) ;
+        SET_DATA_MODE_IN;
+	}
+}
+
 void __not_in_flash_func(feed_XEX_loader)(void) {
 	RD4_LOW;
 	RD5_LOW;
@@ -1459,6 +1510,9 @@ void emulate_cartridge(int cartType) {
 	else if (cartType == CART_TYPE_TURBOSOFT_128K) emulate_turbosoft(128);
 	else if (cartType == CART_TYPE_ATRAX_128K) emulate_atrax();
 	else if (cartType == CART_TYPE_MICROCALC) emulate_microcalc();
+	else if (cartType == CART_TYPE_2K) emulate_standard_8k();
+	else if (cartType == CART_TYPE_PHOENIX_8K) emulate_phoenix_8k();
+	else if (cartType == CART_TYPE_BLIZZARD_4K) emulate_phoenix_8k();
 	else if (cartType == CART_TYPE_XEX) feed_XEX_loader();
 	else
 	{	// no cartridge (cartType = 0)
