@@ -21,6 +21,7 @@
  * - Adds Standard 2k cars (CAR type 57)
  * - Adds Phoenix 8k cars (CAR type 39)
  * - Adds Blizzard 4k cars (CAR type 46)
+ * - Adds Dawliah 32k cars (CAR type 69)   
  */
 
 #include <string.h>
@@ -111,6 +112,7 @@ char errorBuf[40];
 #define CART_TYPE_2K				31  // 2k
 #define CART_TYPE_PHOENIX_8K		32	// 8k
 #define CART_TYPE_BLIZZARD_4K		33	// 4k
+#define CART_TYPE_ADAWLIAH_32k		34	// 32K
 #define CART_TYPE_ATR				254
 #define CART_TYPE_XEX				255
 
@@ -449,6 +451,7 @@ int load_file(char *filename) {
 		else if (car_type == 54)	{ cart_type = CART_TYPE_SIC_128K; expectedSize = 131072; }
 		else if (car_type == 57)	{ cart_type = CART_TYPE_2K; expectedSize = 2048; }
 		else if (car_type == 58)	{ cart_type = CART_TYPE_4K; expectedSize = 4096; }
+		else if (car_type == 69)	{ cart_type = CART_TYPE_ADAWLIAH_32k; expectedSize = 32768; }
 		else {
 			strcpy(errorBuf, "Unsupported CAR type");
 			goto closefile;
@@ -1435,6 +1438,44 @@ void __not_in_flash_func(emulate_phoenix_8k)() {
 	}
 }
 
+void __not_in_flash_func(emulate_adawliah_32k)() {
+	// 32k
+	RD4_LOW;
+	RD5_HIGH;
+
+    uint32_t bank = 0;
+    unsigned char *bankPtr;
+    uint32_t pins;
+    uint16_t addr;
+	bool rd5_high = true;	// 400/800 MMU
+
+	while (1)
+	{
+        // select the right SRAM base, based on the cartridge bank
+		bankPtr = &cart_ram[0] + (8192*bank);
+		// wait for phi2 high
+		while (!((pins = gpio_get_all()) & PHI2_GPIO_MASK)) ;
+
+        if (!(pins & S5_GPIO_MASK) && rd5_high)
+        {   // s5 low
+            SET_DATA_MODE_OUT;
+            addr = pins & ADDR_GPIO_MASK;
+            gpio_put_masked(DATA_GPIO_MASK, ((uint32_t)(*(bankPtr + addr))) << 13);
+        }
+        else if (!(pins & CCTL_GPIO_MASK))
+        {   // CCTL low
+			bank = (bank + 1) & 3;
+			if (bank == 4)	// disable
+				{ RD5_LOW; rd5_high = false; }
+			else
+				{ RD5_HIGH; rd5_high = true; }
+        }
+        // wait for phi2 low
+        while (gpio_get_all() & PHI2_GPIO_MASK) ;
+        SET_DATA_MODE_IN;
+	}
+}
+
 void __not_in_flash_func(feed_XEX_loader)(void) {
 	RD4_LOW;
 	RD5_LOW;
@@ -1513,6 +1554,7 @@ void emulate_cartridge(int cartType) {
 	else if (cartType == CART_TYPE_2K) emulate_standard_8k();
 	else if (cartType == CART_TYPE_PHOENIX_8K) emulate_phoenix_8k();
 	else if (cartType == CART_TYPE_BLIZZARD_4K) emulate_phoenix_8k();
+	else if (cartType == CART_TYPE_ADAWLIAH_32k) emulate_adawliah_32k();
 	else if (cartType == CART_TYPE_XEX) feed_XEX_loader();
 	else
 	{	// no cartridge (cartType = 0)
