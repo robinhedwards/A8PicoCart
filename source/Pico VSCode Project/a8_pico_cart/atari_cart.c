@@ -21,7 +21,8 @@
  * - Adds Standard 2k cars (CAR type 57)
  * - Adds Phoenix 8k cars (CAR type 39)
  * - Adds Blizzard 4k cars (CAR type 46)
- * - Adds Dawliah 32k cars (CAR type 69)   
+ * - Adds Dawliah 32k cars (CAR type 69) 
+ * - Adds Turbo 2000 8k cars (CAR type 253 exclusive emulation)  
  */
 
 #include <string.h>
@@ -113,6 +114,7 @@ char errorBuf[40];
 #define CART_TYPE_PHOENIX_8K		32	// 8k
 #define CART_TYPE_BLIZZARD_4K		33	// 4k
 #define CART_TYPE_ADAWLIAH_32k		34	// 32K
+#define CART_TYPE_T2000_8K			253 // 8k
 #define CART_TYPE_ATR				254
 #define CART_TYPE_XEX				255
 
@@ -452,6 +454,7 @@ int load_file(char *filename) {
 		else if (car_type == 57)	{ cart_type = CART_TYPE_2K; expectedSize = 2048; }
 		else if (car_type == 58)	{ cart_type = CART_TYPE_4K; expectedSize = 4096; }
 		else if (car_type == 69)	{ cart_type = CART_TYPE_ADAWLIAH_32k; expectedSize = 32768; }
+		else if (car_type == 253)	{ cart_type = CART_TYPE_T2000_8K; expectedSize = 8192; }
 		else {
 			strcpy(errorBuf, "Unsupported CAR type");
 			goto closefile;
@@ -1476,6 +1479,33 @@ void __not_in_flash_func(emulate_adawliah_32k)() {
 	}
 }
 
+int64_t t2000_rd5_off(alarm_id_t id, void *user_data) {
+	RD5_LOW;
+    return 0;
+}
+
+void __not_in_flash_func(emulate_t2000_8k)() {
+	// 8k
+	RD4_LOW;
+	RD5_HIGH;
+    uint32_t pins;
+    uint16_t addr;
+	add_alarm_in_ms(2000, t2000_rd5_off, NULL, false);
+	
+	while (1)
+	{   
+		// wait for s5 low
+		while ((pins = gpio_get_all()) & S5_GPIO_MASK) ;
+		SET_DATA_MODE_OUT;
+		// while s5 low
+		while(!((pins = gpio_get_all()) & S5_GPIO_MASK)) {
+			addr = pins & ADDR_GPIO_MASK;
+			gpio_put_masked(DATA_GPIO_MASK, ((uint32_t)cart_ram[addr]) << 13);
+		}
+		SET_DATA_MODE_IN;
+	}
+}
+
 void __not_in_flash_func(feed_XEX_loader)(void) {
 	RD4_LOW;
 	RD5_LOW;
@@ -1555,6 +1585,7 @@ void emulate_cartridge(int cartType) {
 	else if (cartType == CART_TYPE_PHOENIX_8K) emulate_phoenix_8k();
 	else if (cartType == CART_TYPE_BLIZZARD_4K) emulate_phoenix_8k();
 	else if (cartType == CART_TYPE_ADAWLIAH_32k) emulate_adawliah_32k();
+	else if (cartType == CART_TYPE_T2000_8K) emulate_t2000_8k();
 	else if (cartType == CART_TYPE_XEX) feed_XEX_loader();
 	else
 	{	// no cartridge (cartType = 0)
