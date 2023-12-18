@@ -5,18 +5,16 @@
 include <a8pico_dimensions.scad>
 include <cube_round.scad>
 
-corner_r=1;
-
 module front_outside()
 {
     // main shell
-    cube_round([cart_length, cart_width, cartf_height],r=corner_r,round_top=false);
+    cube_round([cart_length, cart_width, cartf_height],r=corner_r,fn=corner_fn, round_top=false);
 
     // ridges
     for (i = [15: 5: cart_length-5])
-                translate([i, -ridge_width, 1])
+                translate([i, -ridge_width, corner_r])
                     cube_round([3, cart_width + 2*ridge_width,
-cartb_height-rim_height-1-1],r=ridge_width,round_top=false);
+cartb_height-rim_height-1-corner_r],r=ridge_width,round_top=false);
 
 
 }
@@ -24,17 +22,24 @@ cartb_height-rim_height-1-1],r=ridge_width,round_top=false);
 // FIXME move this to dimensions
 port_cut_height=10;
 
-module front_inside(){
+
+module front_inside() {
     // rims
-    translate([0, sides_thickness/2, cartf_height-rim_height])
-        cube([cart_length-sides_thickness/2,
-            cart_width-sides_thickness, rim_height+1]);
+    translate([sides_thickness/2-rim_clearance,cart_width -
+        sides_thickness/2+rim_clearance, cartf_height-rim_height +
+        rim_height+corner_r])
+        rotate([180,0,0])
+        cube_round([cart_length-sides_thickness+2*rim_clearance,
+            cart_width-sides_thickness+2*rim_clearance,
+            rim_height+corner_r],
+            r=corner_r-sides_thickness/2,fn=corner_fn,round_top=false);
 
     // make hollow
     translate([-1, sides_thickness, front_thickness])
-        cube([cart_length-sides_thickness+1,
+        cube_round([cart_length-sides_thickness+1,
             cart_width-sides_thickness*2,
-            cartf_height-front_thickness+1]);
+            cartf_height-front_thickness+1],
+            r=corner_r-sides_thickness,fn=corner_fn,round_top=false);
 
     // cutout cart port
     translate([-1, (cart_width-57)/2, -1])
@@ -95,7 +100,6 @@ module front_logo_hole() {
         translate([cart_length-logo_height-2, cart_width-logo_width-3.5, -1])
             cube([logo_height, logo_width, 1+1]);
     }
-
 }
 
 logo_image = "a8pico_logo.png";
@@ -126,16 +130,34 @@ module logo()
 
 }
 
+module reset_label()
+{
+    font = "Liberation Mono:style=Medium";
+    rpi_logo_scale = 0.22;
+    rst_height = 1.6;
+
+    mirror([0,1,0])
+        linear_extrude(height = rst_height) {
+            translate([38,0]) 
+                text(text = str("RST"), font = font, size = 30);
+            translate([0,-8]) 
+                scale([rpi_logo_scale,rpi_logo_scale])
+                import("raspberry-logo-raspberry-pi.svg");
+        }
+}
+
 module front() {
 
     difference() {
         front_wo_logo();
         // logo rectangle
-        translate([cart_length-logo_height-2, cart_width-logo_width-3.5, -1])
+        translate([cart_length-logo_height-3, cart_width-logo_width-3.5, -1])
         logo();
 
+        translate([cart_length-25, cart_width-46, -1])
+        scale([0.15,0.15,1])
+        reset_label();
     }
-
 }
 
 front();

@@ -5,45 +5,46 @@
 include <a8pico_dimensions.scad>
 use <cube_round.scad>
 
-corner_r=1;
-
 module back_outside()
 {
     cube_round([cart_length, cart_width, cartb_height-rim_height], corner_r,
-round_top=false);
+        fn=corner_fn, round_top=false);
+
     // rim
-    translate([0, sides_thickness/2, cartb_height-rim_height])
-        cube([cart_length-sides_thickness/2, sides_thickness/2, rim_height]);
-    translate([0, cart_width-sides_thickness, cartb_height-rim_height])
-        cube([cart_length-sides_thickness/2, sides_thickness/2, rim_height]);
-    translate([cart_length-sides_thickness, sides_thickness/2, cartb_height-rim_height])
-        cube([sides_thickness/2, cart_width-sides_thickness, rim_height]);
+    translate([sides_thickness/2+rim_clearance, sides_thickness/2+rim_clearance, 0])
+        cube_round([cart_length-sides_thickness-2*rim_clearance, cart_width-
+            2*sides_thickness/2 - 2*rim_clearance,
+            cartb_height], corner_r-sides_thickness/2,
+            fn=corner_fn, round_top=false);
 
-        // ridges
-        for (i = [15: 5: cart_length-5])
-                translate([i, -ridge_width, 1])
-                    cube_round([3, cart_width + 2*ridge_width,
-cartb_height-rim_height-1],r=ridge_width,round_top=false);
-
+    // ridges
+    for (i = [15: 5: cart_length-5])
+        translate([i, -ridge_width, corner_r])
+            cube_round([3, cart_width + 2*ridge_width,
+                cartb_height-rim_height-corner_r],r=ridge_width,fn=corner_fn,round_top=false);
 
 }
 
 
 module back_inside()
 {
-//FIXME  name the "4"
-// upper part, whole lenght
-             translate([-1, sides_thickness, front_thickness+4])
-                cube([cart_length-sides_thickness+1,
-                    cart_width-sides_thickness*2,
-                    cartb_height-front_thickness]);
+    //FIXME  name the "4"
+    // upper part, whole lenght
+    translate([-1, sides_thickness, front_thickness+4])
+        cube_round([cart_length-sides_thickness+1,
+            cart_width-sides_thickness*2,
+            cartb_height-front_thickness],
+            r = corner_r-sides_thickness, fn = corner_fn,
+            round_top=false);
 
-//inside part without the wall on the header end
-            translate([sides_thickness, sides_thickness, front_thickness])
-                cube([cart_length-sides_thickness*2,
-                    cart_width-sides_thickness*2,
-                    cartb_height-front_thickness]);
-      // cutout USB slot
+    //inside part without the wall on the header end
+    translate([sides_thickness, sides_thickness, front_thickness])
+        cube_round([cart_length-sides_thickness*2,
+            cart_width-sides_thickness*2,
+            cartb_height-front_thickness],
+            r = corner_r-sides_thickness, fn = corner_fn,
+            round_top=false);
+    // cutout USB slot
     translate([-1, (cart_width-16)/2+0.5, front_thickness])    // pico is 0.5 mm off center
         cube([40+1, 16, cartb_height]);
 
@@ -74,11 +75,12 @@ cartb_height-sides_thickness/2]);
                  cube([support_thickness+2, 16, cartb_height]);
         }
 
-        translate([60, sides_thickness/2, sides_thickness/2])
-            cube([support_thickness, 7-sides_thicknes/2, supportb_height]);
-        translate([60, cart_width-7, sides_thickness/2])
+        translate([60, sides_thickness, sides_thickness])
+            cube([support_thickness, 7-sides_thickness,
+                    supportb_height-sides_thickness]);
+        translate([60, cart_width-7, sides_thickness])
             cube([support_thickness, 7-sides_thickness/2,
-supportb_height-sides_thickness/2]);
+supportb_height-sides_thickness]);
 
 
 

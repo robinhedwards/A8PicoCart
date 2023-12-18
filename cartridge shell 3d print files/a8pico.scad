@@ -1,14 +1,12 @@
 use <a8pico_back_v2.scad>
 use <a8pico_front.scad>
 
-//FIXME make file with dimensions
-
 ridge_width = 0.5;
 cart_width=65 - (ridge_width*2);
 
 module logo()
 {
-
+// FIXME TBD?
 }
 
 module assembly()
