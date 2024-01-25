@@ -21,8 +21,9 @@
  * - Adds Standard 2k cars (CAR type 57)
  * - Adds Phoenix 8k cars (CAR type 39)
  * - Adds Blizzard 4k cars (CAR type 46)
- * - Adds Dawliah 32k cars (CAR type 69) 
- * - Adds Turbo 2000 8k cars (CAR type 253 exclusive emulation)  
+ * - Adds Dawliah 32k cars (CAR type 69)
+ * - Adds Turbo 2000 8k cars (CAR type 253 exclusive emulation)
+ * - Adds JNSoft 16k cars (CAR type 252 exclusive emulation)
  */
 
 #include <string.h>
@@ -114,6 +115,7 @@ char errorBuf[40];
 #define CART_TYPE_PHOENIX_8K		32	// 8k
 #define CART_TYPE_BLIZZARD_4K		33	// 4k
 #define CART_TYPE_ADAWLIAH_32k		34	// 32K
+#define CART_TYPE_JNSOFT_16k		252	// 16K
 #define CART_TYPE_T2000_8K			253 // 8k
 #define CART_TYPE_ATR				254
 #define CART_TYPE_XEX				255
@@ -454,6 +456,7 @@ int load_file(char *filename) {
 		else if (car_type == 57)	{ cart_type = CART_TYPE_2K; expectedSize = 2048; }
 		else if (car_type == 58)	{ cart_type = CART_TYPE_4K; expectedSize = 4096; }
 		else if (car_type == 69)	{ cart_type = CART_TYPE_ADAWLIAH_32k; expectedSize = 32768; }
+		else if (car_type == 252)	{ cart_type = CART_TYPE_JNSOFT_16k; expectedSize = 16384; }
 		else if (car_type == 253)	{ cart_type = CART_TYPE_T2000_8K; expectedSize = 8192; }
 		else {
 			strcpy(errorBuf, "Unsupported CAR type");
@@ -1479,7 +1482,7 @@ void __not_in_flash_func(emulate_adawliah_32k)() {
 	}
 }
 
-int64_t t2000_rd5_off(alarm_id_t id, void *user_data) {
+int64_t off_rd5_cart(alarm_id_t id, void *user_data) {
 	RD5_LOW;
     return 0;
 }
@@ -1490,7 +1493,7 @@ void __not_in_flash_func(emulate_t2000_8k)() {
 	RD5_HIGH;
     uint32_t pins;
     uint16_t addr;
-	add_alarm_in_ms(2000, t2000_rd5_off, NULL, false);
+	add_alarm_in_ms(2000, off_rd5_cart, NULL, false);
 	
 	while (1)
 	{   
@@ -1501,6 +1504,37 @@ void __not_in_flash_func(emulate_t2000_8k)() {
 		while(!((pins = gpio_get_all()) & S5_GPIO_MASK)) {
 			addr = pins & ADDR_GPIO_MASK;
 			gpio_put_masked(DATA_GPIO_MASK, ((uint32_t)cart_ram[addr]) << 13);
+		}
+		SET_DATA_MODE_IN;
+	}
+}
+
+void __not_in_flash_func(emulate_jnsoft_16k)() {
+	// 16k
+	RD4_HIGH;
+	RD5_HIGH;
+	uint32_t pins;
+	uint16_t addr;
+	add_alarm_in_ms(8000, off_rd5_cart, NULL, false);
+
+	while (1)
+	{
+		// wait for either s4 or s5 low
+		while (((pins = gpio_get_all()) & S4_S5_GPIO_MASK) == S4_S5_GPIO_MASK) ;
+		SET_DATA_MODE_OUT;
+		if (!(pins & S4_GPIO_MASK)) {
+			// while s4 low
+			while(!((pins = gpio_get_all()) & S4_GPIO_MASK)) {
+				addr = pins & ADDR_GPIO_MASK;
+				gpio_put_masked(DATA_GPIO_MASK, ((uint32_t)cart_ram[addr]) << 13);
+			}
+		}
+		else {
+			// while s5 low
+			while(!((pins = gpio_get_all()) & S5_GPIO_MASK)) {
+				addr = pins & ADDR_GPIO_MASK;
+				gpio_put_masked(DATA_GPIO_MASK, ((uint32_t)cart_ram[0x2000|addr]) << 13);
+			}
 		}
 		SET_DATA_MODE_IN;
 	}
@@ -1586,6 +1620,7 @@ void emulate_cartridge(int cartType) {
 	else if (cartType == CART_TYPE_BLIZZARD_4K) emulate_phoenix_8k();
 	else if (cartType == CART_TYPE_ADAWLIAH_32k) emulate_adawliah_32k();
 	else if (cartType == CART_TYPE_T2000_8K) emulate_t2000_8k();
+	else if (cartType == CART_TYPE_JNSOFT_16k) emulate_jnsoft_16k();
 	else if (cartType == CART_TYPE_XEX) feed_XEX_loader();
 	else
 	{	// no cartridge (cartType = 0)
