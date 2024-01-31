@@ -22,6 +22,7 @@
  * - Adds Phoenix 8k cars (CAR type 39)
  * - Adds Blizzard 4k cars (CAR type 46)
  * - Adds Dawliah 32k cars (CAR type 69)
+ * - Adds Telelink II 8k car (CAR type 78)
  * - Adds Turbo 2000 8k cars (CAR type 253 exclusive emulation)
  * - Adds JNSoft 16k cars (CAR type 252 exclusive emulation)
  */
@@ -115,6 +116,7 @@ char errorBuf[40];
 #define CART_TYPE_PHOENIX_8K		32	// 8k
 #define CART_TYPE_BLIZZARD_4K		33	// 4k
 #define CART_TYPE_ADAWLIAH_32k		34	// 32K
+#define CART_TYPE_TELELINK2_8k		35	// 8k
 #define CART_TYPE_JNSOFT_16k		252	// 16K
 #define CART_TYPE_T2000_8K			253 // 8k
 #define CART_TYPE_ATR				254
@@ -456,6 +458,7 @@ int load_file(char *filename) {
 		else if (car_type == 57)	{ cart_type = CART_TYPE_2K; expectedSize = 2048; }
 		else if (car_type == 58)	{ cart_type = CART_TYPE_4K; expectedSize = 4096; }
 		else if (car_type == 69)	{ cart_type = CART_TYPE_ADAWLIAH_32k; expectedSize = 32768; }
+		else if (car_type == 78)	{ cart_type = CART_TYPE_TELELINK2_8k; expectedSize = 8192; }
 		else if (car_type == 252)	{ cart_type = CART_TYPE_JNSOFT_16k; expectedSize = 16384; }
 		else if (car_type == 253)	{ cart_type = CART_TYPE_T2000_8K; expectedSize = 8192; }
 		else {
@@ -535,6 +538,12 @@ int load_file(char *filename) {
 	// special case for 4K carts to allow the phoenix 8k emulation to be used
 	if (cart_type == CART_TYPE_BLIZZARD_4K) {
 		memcpy(&cart_ram[4096], &cart_ram[0], 4096);
+	}
+
+	// special case to add 8k to properly emulate Telelink II
+	if (cart_type == CART_TYPE_TELELINK2_8k) {
+		memcpy(&cart_ram[8192], &cart_ram[0], 8192);
+		memset(&cart_ram[0], 0xFF, 8192);		
 	}
 
 closefile:
@@ -1619,6 +1628,7 @@ void emulate_cartridge(int cartType) {
 	else if (cartType == CART_TYPE_PHOENIX_8K) emulate_phoenix_8k();
 	else if (cartType == CART_TYPE_BLIZZARD_4K) emulate_phoenix_8k();
 	else if (cartType == CART_TYPE_ADAWLIAH_32k) emulate_adawliah_32k();
+	else if (cartType == CART_TYPE_TELELINK2_8k) emulate_standard_16k();
 	else if (cartType == CART_TYPE_T2000_8K) emulate_t2000_8k();
 	else if (cartType == CART_TYPE_JNSOFT_16k) emulate_jnsoft_16k();
 	else if (cartType == CART_TYPE_XEX) feed_XEX_loader();
