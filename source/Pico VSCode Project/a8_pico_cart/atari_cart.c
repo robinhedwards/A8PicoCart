@@ -296,6 +296,27 @@ int read_directory(char *path) {
 	return ret;
 }
 
+unsigned char *load_menucart(char *filename) {
+	FATFS FatFs;
+	FIL fil;
+	unsigned char *dst = &A8PicoCart_rom[0];
+	int bytes_to_read = 8192;
+	UINT br;
+
+	if (!fatfs_is_mounted())
+       mount_fatfs_disk();
+
+	if (f_mount(&FatFs, "", 1) == FR_OK) {
+		if (f_open(&fil, filename, FA_READ) == FR_OK) {
+			if (f_read(&fil, dst, bytes_to_read, &br) == FR_OK) { }
+			f_close(&fil);	
+		}
+		f_mount(0, "", 1);
+	}
+
+	return dst;
+}
+
 /* ATR Handling */
 
 // ATR format
@@ -1655,6 +1676,10 @@ void __not_in_flash_func(atari_cart_main)()
 	int cartType = 0, atrMode = 0;
 	char curPath[256] = "";
 	char path[256];
+
+	// look for alternative menu if you do not leave the default one
+	unsigned char *cartmenu = load_menucart("A8PICOCART.ROM");
+	if (cartmenu) memcpy(&A8PicoCart_rom[0],&cartmenu[0],8192);
 
     while (1) {
         int cmd = emulate_boot_rom(atrMode);
