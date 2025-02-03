@@ -2,7 +2,7 @@
  * by Robin Edwards/Electrotrains@AtariAge
  * This file builds with WUDSN/MADS into an 8K Atari ROM
  * The 8k ROM should be converted into a C include file using:
- *  xxd -i A8PicoCart.ROM > rom.h
+ *  xxd -i A8PicoCart.rom > rom.h
  */
 
 /*
@@ -33,7 +33,7 @@ DIR_START_ROW = 7
 DIR_END_ROW = 21
 ITEMS_PER_PAGE = DIR_END_ROW-DIR_START_ROW+1
 
-;@com.wudsn.ide.asm.outputfileextension=.rom
+;@com.wudsn.ide.lng.outputfileextension=.rom
 
 ;CARTCS	= $bffa                    ;Start address vector, used if CARTFG has CARTFG_START_CART bit set
 ;CART	= $bffc                    ;Flag, must be zero for modules
@@ -1307,7 +1307,7 @@ BufIndex	equ *-2
 	ldy #0
 	sta (IOPtr),y
 	inw IOPtr
-	dew BLen
+.nowarn	dew BLen
 	
 	ldx #3		; y is already 0
 	sec

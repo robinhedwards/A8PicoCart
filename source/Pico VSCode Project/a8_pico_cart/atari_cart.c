@@ -31,6 +31,7 @@
 
 #include "ff.h"
 #include "fatfs_disk.h"
+#include "hardware/clocks.h"
 
 #define ALL_GPIO_MASK   	0x3FFFFFFF
 #define ADDR_GPIO_MASK  	0x00001FFF
