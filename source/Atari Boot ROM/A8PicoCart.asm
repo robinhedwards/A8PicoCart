@@ -44,9 +44,9 @@ CARTFG_DIAGNOSTIC_CART = $80       ;Flag value: Directly jump via CARTAD during 
 CARTFG_START_CART      = $04       ;Flag value: Jump via CARTAD and then via CARTCS.
 CARTFG_BOOT            = $01       ;Flag value: Boot peripherals, then start the module.
 
-COLDSV = $E477				; Coldstart (powerup) entry point
-WARMSV = $E474				; Warmstart entry point
-CH = $2FC				; Internal hardware value for the last key pressed
+COLDSV = $E477                     ;Coldstart (powerup) entry point
+WARMSV = $E474                     ;Warmstart entry point
+CH = $2FC                          ;Internal hardware value for the last key pressed
 BOOT = $09
 CASINI = $02
 OSROM = $C000
@@ -64,6 +64,7 @@ COLOR1 = $2C5
 COLOR2 = $2C6
 COLOR3 = $2C7
 COLOR4 = $2C8
+PADDL0 = $270
 STICK0 = $278
 
 HPosP0	equ $D000
@@ -87,9 +88,9 @@ Trig0	equ $D010
 ColPM2	equ $D014
 GRACTL	equ $D01D
 
-sm_ptr = $58				; screen memory
+sm_ptr = $58						; screen memory
 search_string = $600
-wait_for_cart = $620			; routine copied here
+wait_for_cart = $620				; routine copied here
 reboot_to_selected_cart = $630		; routine copied here
 
 PMBuffer = $800
@@ -118,6 +119,7 @@ text_out_y	= $94	// word
 text_out_ptr	= $96	// word
 text_out_len	= $98
 cur_chunk	= $99
+joy2b		= $100
 
 ; XEX loader stuff from Jon Halliday/FJC
 LoaderAddress	equ $700
@@ -216,7 +218,7 @@ patch_boot
 	mva #3 BOOT ; patch reset - from mapping the atari (revised) appendix 11
 	mwa #reset_routine CASINI
 	
-        jsr display_boot_screen
+	jsr display_boot_screen
 	jsr copy_wait_for_cart
 	jsr copy_reboot_to_selected_cart
 	jsr setup_pmg
@@ -264,59 +266,106 @@ main_loop
 	jsr wait_for_vsync
 	jsr GetKey
 	beq check_joystick
-	cmp #$1C ; cur up
-	beq up_pressed
-	cmp #'-'
-	beq up_pressed
-	
-	cmp #$1D ; cur down
+					;BACK
+	cmp #'+'		;Cur left without Ctrl key
+	bne @+
+	jmp back_pressed
+@	cmp #$1B
+	bne @+
+	jmp back_pressed
+@	cmp #$1E 		;cur left
+	bne @+ 
+	jmp back_pressed
+					;ENTER
+@	cmp #$9B 		;ret
+	bne @+
+	jmp return_pressed
+					;DISABLE
+@	cmp #'b'
+	bne @+
+	jmp disable_pressed
+					;SEARCH
+@	cmp #'f' 		;esc
+	bne @+
+	jmp search_pressed
+@	cmp #'/'
+	bne @+
+	jmp search_pressed
+					;FWD PAGE
+@	cmp #'>'
+	bne @+
+	jmp adv_page
+@	cmp #$8F
+	bne @+
+	jmp adv_page
+					;REW PAGE
+@	cmp #'<'
+	bne @+
+	jmp rev_page
+@	cmp #$8E
+	bne @+
+	jmp rev_page
+
+@	cmp #$90		;HOME Button: first item (TKII)
+	bne @+
+	jmp first_item
+@	cmp #$91		;END Button: last item (TKII)
+	bne @+
+	jmp last_item
+@					;UP
+	cmp #$1C 		;cur up
+	bne @+
+	jmp up_pressed
+@	cmp #'-'
+	bne @+
+	jmp up_pressed
+					;DOWN
+@	cmp #$1D		;cur down
 	beq down_pressed
 	cmp #'='
 	beq down_pressed
 	
-	cmp #'b'
-	bne _1
-	jmp back_pressed
-_1	cmp #$1E ; cur left
-	bne _2 
-	jmp back_pressed
-
-_2	cmp #$9B ; ret
-	bne _3
-	jmp return_pressed
-
-_3	cmp #'x'
-	bne _4
-	jmp disable_pressed
-
-_4	cmp #$1B ; esc
-	bne _5
-	jmp search_pressed
-_5
 check_joystick
 	jsr read_joystick
 	lda trigger_pressed
 	cmp #1
-	beq return_pressed
+	bne @+
+	jmp return_pressed
 	
-	lda stick_input
+@	lda stick_input
 	and #$01
-	bne up_pressed
+	beq @+
+	jmp up_pressed
 	
-	lda stick_input
+@	lda stick_input
 	and #$02
-	bne down_pressed
+	beq @+
+	jmp down_pressed
 	
-	jmp main_loop
+@	lda stick_input
+	and #$04	
+	beq @+
+	jmp back_pressed
+
+@	lda PADDL0		;Joy 2B+ support
+	cmp joy2b
+	beq @+
+	sta joy2b
+	eor #$e4
+	bne @+
+	jmp back_pressed
+	
+@	jmp main_loop
 
 down_pressed
 	lda cur_item
 	clc
 	adc #1
 	cmp num_dir_entries
-	bcs main_loop
+	bcc @+
+	jmp main_loop
 ; single row down
-	inc cur_item
+@	inc cur_item
 ; do we need to page down?
 	lda cur_item
 	sec
@@ -326,6 +375,43 @@ down_pressed
 	beq page_down
 	jsr draw_cursor
 	jmp main_loop
+adv_page
+	lda cur_item
+	clc
+	adc #ITEMS_PER_PAGE	; A <- Current + Itemsperpage
+	bcc @+			;check we passed $FF
+	jmp cur_item_max	;if yes, deal with the case in cur_item_max
+@	cmp num_dir_entries	;Check if surpasses max
+	bcs cur_item_max	;if yes, deal with it
+	sta cur_item		;if not, then save it and jump to page down
+	jmp page_down
+cur_item_max
+	lda num_dir_entries	
+	sec
+	sbc #1
+	sta cur_item		;saturate current item <- max-1
+	sec
+	sbc top_item		;but need to move to next page?
+	clc
+	cmp #ITEMS_PER_PAGE
+	bcs page_down		;if yes, then move to next page
+	jsr draw_cursor
+	jmp main_loop
+last_item
+	lda num_dir_entries
+	sec
+	sbc #1
+	sta cur_item		;set current item the last one (N-1)
+	lda top_item		;advance top item one page at...	
+@	clc					;the time until reach the end
+	adc #ITEMS_PER_PAGE
+	bcs @+				;it passed $FF so we are done
+	cmp num_dir_entries	;check whether it passed N	
+	bcc @-				;if not then adv another page
+@	sec					;need to move one page back
+	sbc #ITEMS_PER_PAGE
+	sta top_item
+	jmp display_directory
 page_down
 	lda top_item
 	clc
@@ -336,15 +422,34 @@ page_down
 up_pressed
 	lda cur_item
 	cmp #0
-	beq main_loop
+	bne @+
+	jmp main_loop
 ; single row up
-	dec cur_item
+@	dec cur_item
 ; do we need to page up
 	lda cur_item
 	cmp top_item
 	bmi page_up
 	jsr draw_cursor
 	jmp main_loop
+rev_page
+	lda cur_item
+	sec
+	sbc #ITEMS_PER_PAGE
+	bcc cur_item_min	;check if reach top of the file list, if yes, then deal with it
+	sta cur_item		;if not, then save it and jump to page up
+	jmp page_up
+cur_item_min
+	lda cur_item
+	bne @+			;if current item already zero, do nothing 
+	jmp main_loop
+@	mva #0 cur_item		;o.w. set current item to zero
+	jsr draw_cursor
+	jmp main_loop
+first_item
+	mva #$00 cur_item
+	sta top_item		;update top item and update dir
+	jmp display_directory	
 page_up
 	lda top_item
 	sec
@@ -399,6 +504,7 @@ disable_pressed
 
 launch_xex
 	jsr disable_pmg
+	jsr clear_ram_boot
 	jsr copy_XEX_loader
 	jmp LoadBinaryFile
 	
@@ -438,7 +544,7 @@ search
 	jsr wait_for_cart
 	mva #1 search_results_mode
 	jmp check_read_dir
-        .endp ; proc start
+    .endp ; proc start
 
 
 ; ************************ SUBROUTINES ****************************
@@ -446,6 +552,7 @@ search
 	mva #$01 trigger_state
 	mva #$0F stick_state
 	mva #0 stick_timer
+	mva #$E4 joy2b
 	rts
 	.endp
 
@@ -1050,7 +1157,9 @@ endoftext
 	jmp COLDSV
 	.endp
 
+
 ; ************************ XEX LOADER ****************************
+
 
 .proc copy_XEX_loader
 	mwa #LoaderCodeStart ptr1
@@ -1085,6 +1194,19 @@ Loop
 	bne Loop
 	rts
 	.endp
+	
+.proc clear_ram_boot
+	lda #0
+	sta NMIEN
+	tax
+@
+	sta $400,x
+	sta $500,x
+	sta $600,x
+	inx
+	bne @-
+	rts
+	.endp
 
 
 ; ************************ DATA ****************************
@@ -1098,13 +1220,13 @@ Loop
 	.byte " / _ \/ _ \  _/ / _/_\ (__/ _' | '_|  _|"
 	.endl
 	.local menu_text4
-	.byte "/_/ \_\___/_| |_\__\_/\___\__,_|_|  \__|"
+	.byte "/_/ \_\___/_| |_\__\_/\___\__,_|_|  \__)"
 	.endl
 	.local menu_text5
-	.byte "                      Electrotrains 2023"
+	.byte "                Electrotrains 09/02/2026"
 	.endl
 	.local menu_text_bottom
-	.byte 'CurUp/Dn/Retn=Sel B=Back X=Boot Esc=Find'
+	.byte $DD,'/',$DC,'/Return=Sel ',$DE,'/Esc=Back B=Boot F=Find '
 	.endl
 	.local directory_text
 	.byte '[Directory contents]'
